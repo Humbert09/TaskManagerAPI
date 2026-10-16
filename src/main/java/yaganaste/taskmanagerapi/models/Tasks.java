@@ -7,7 +7,7 @@ import yaganaste.taskmanagerapi.enums.TaskStatus;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "tasks")
+@Table(name = "tasks", schema = "management")
 public class Tasks {
 
     @Id
@@ -65,9 +65,10 @@ public class Tasks {
         this.status = status;
     }
 
-    public void setTitle(String trim) {
+    public void setTitle(String trim) { this.title = trim;
     }
 
     public void setCreationDate(OffsetDateTime now) {
+        this.creationDate = now;
     }
 }

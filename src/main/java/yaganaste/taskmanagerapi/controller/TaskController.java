@@ -1,6 +1,7 @@
 package yaganaste.taskmanagerapi.controller;
 
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+
+import org.springframework.web.bind.annotation.RequestBody;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,8 +12,14 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import yaganaste.taskmanagerapi.dto.TaskCreateDTO;
 import yaganaste.taskmanagerapi.dto.TaskResponseDTO;
 import yaganaste.taskmanagerapi.service.TaskService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.net.URI;
+
+@Tag(
+        name = "Task Management System",
+        description = "API REST para administrar tareas"
+)
 
 @RestController
 @RequestMapping("/taskmanagement")
