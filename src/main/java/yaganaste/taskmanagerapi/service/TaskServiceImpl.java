@@ -52,27 +52,64 @@ public class TaskServiceImpl  implements TaskService{
 
     //Obtiene una lista con todos los objetos Tasks de la DB
     @Override
-    public List<Tasks> getAllTasks() {
-        return taskRepository.findAll();
+    @Transactional
+    public List<TaskResponseDTO> getAllTasks() {
+        List<Tasks> tasks = taskRepository.findAll();
+
+        if (tasks.isEmpty()) {
+            throw new EntityNotFoundException(
+                    "No hay tareas registradas en el sistema."
+            );
+        }
+
+        return tasks.stream()
+                .map(task -> new TaskResponseDTO(
+                        task.getId(),
+                        task.getTitle(),
+                        task.getDescription(),
+                        task.getStatus(),
+                        task.getCreationDate()
+                ))
+                .toList();
     }
 
     //Obtiene una tarea a través de su id
     @Override
-    public Tasks getTaskById(Integer id) {
+    @Transactional
+    public TaskResponseDTO getTaskById(Integer id) {
 
-        if(id == null || id < 1) {
-            throw new IllegalArgumentException("El Id no puede estar vacío ni contener valores menores a 1");
+        Tasks task = findTaskEntityById(id);
+
+        return new TaskResponseDTO(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getStatus(),
+                task.getCreationDate()
+        );
+    }
+
+    //Metodo implementado para buscar la tarea como entidad y poder devolverla en un dto
+    private Tasks findTaskEntityById(Integer id) {
+
+        if (id == null || id < 1) {
+            throw new IllegalArgumentException(
+                    "El ID no puede ser nulo ni menor a 1"
+            );
         }
 
         return taskRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("La tarea con ID " + id + " no fue encontrada."));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "La tarea con ID " + id + " no fue encontrada."
+                ));
     }
+
 
     //Borra una tarea a través de su id
     @Transactional
     @Override
     public void deleteTasksById(Integer id) {
-        Tasks tmp = getTaskById(id);
+        Tasks tmp = findTaskEntityById(id);
 
         if(tmp.getStatus() == TaskStatus.Completed) {
             throw new IllegalStateException ("No puedes eliminar una tarea marcada como 'Completed'");
@@ -86,7 +123,7 @@ public class TaskServiceImpl  implements TaskService{
     @Override
     public Tasks updateTaskById(Integer id, TaskUpdateDTO dto) {
 
-        Tasks tmp = getTaskById(id);
+        Tasks tmp = findTaskEntityById(id);
 
         if(tmp.getStatus() == TaskStatus.Completed) {
             throw new IllegalStateException ("No puedes modificar una tarea marcada como 'Completed'");

@@ -16,10 +16,10 @@ public interface TaskService {
     TaskResponseDTO createTask(TaskCreateDTO dto);
 
     //Obtiene todas las tareas
-    List<Tasks> getAllTasks();
+    List<TaskResponseDTO> getAllTasks();
 
     //Devuelve una tarea por id
-    Tasks getTaskById(Integer id);
+    TaskResponseDTO getTaskById(Integer id);
 
     //Borra una tarea a través de su id
     @Transactional

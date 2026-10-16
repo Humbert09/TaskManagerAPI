@@ -1,13 +1,10 @@
 package yaganaste.taskmanagerapi.controller;
 
 
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import yaganaste.taskmanagerapi.dto.TaskCreateDTO;
 import yaganaste.taskmanagerapi.dto.TaskResponseDTO;
@@ -15,6 +12,7 @@ import yaganaste.taskmanagerapi.service.TaskService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.net.URI;
+import java.util.List;
 
 @Tag(
         name = "Task Management System",
@@ -41,5 +39,21 @@ public class TaskController {
                 .toUri();
 
         return ResponseEntity.created(location).body(response);
+    }
+
+    @GetMapping("/allTasks")
+    public ResponseEntity<List<TaskResponseDTO>> getAllTasks() {
+
+        List<TaskResponseDTO> tasks = taskService.getAllTasks();
+
+        return ResponseEntity.ok(tasks);
+    }
+
+    @GetMapping("/task/{id}")
+    public ResponseEntity<TaskResponseDTO> getTaskById(@PathVariable Integer id) {
+
+        TaskResponseDTO response = taskService.getTaskById(id);
+
+        return ResponseEntity.ok(response);
     }
 }
