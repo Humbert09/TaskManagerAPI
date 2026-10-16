@@ -6,10 +6,19 @@
 ![Gradle](https://img.shields.io/badge/Gradle-9.8.1-02303A)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
 ![Tests](https://img.shields.io/badge/Tests-20%20aprobadas-brightgreen)
+![Azure Container Apps](https://img.shields.io/badge/Azure%20Container%20Apps-Healthy-0078D4)
 
 API REST desarrollada como **desafío técnico de Java Backend** para administrar tareas mediante operaciones CRUD. Incluye persistencia en PostgreSQL, migraciones de base de datos con Flyway, validación de peticiones, manejo centralizado de excepciones, documentación interactiva con Swagger/OpenAPI, pruebas automatizadas, ejecución con Docker y un pipeline de Azure DevOps.
 
-> **Estado de entrega (16 de octubre de 2026):** CRUD, pruebas locales y CI de Azure DevOps comprobados. La imagen Docker está publicada en Azure Container Registry. La ejecución pública en Azure Container Apps y la automatización completa del despliegue **todavía están pendientes de verificación**.
+> **Estado verificado (16 de octubre de 2026):** el servicio está desplegado en **Azure Container Apps**; la revisión `taskmanager-api--ioygsue` se reportó **Healthy** con una réplica activa y el 100 % del tráfico. Los logs confirman el arranque de Java 21/Spring Boot 4.1.1, la conexión a PostgreSQL en Azure y las **tres migraciones Flyway** aplicadas. **Swagger UI público ya fue abierto y comprobado.** El CI (20 pruebas y publicación de imagen en ACR) está validado; **falta confirmar mediante una ejecución exitosa la etapa de despliegue automático (CD)**. La accesibilidad y los estados de Azure pueden cambiar con el tiempo.
+
+### Demostración en Azure
+
+- **Swagger UI:** https://taskmanager-api.wittysea-ba809eb0.mexicocentral.azurecontainerapps.io/swagger-ui/index.html
+- **Documento OpenAPI (JSON):** https://taskmanager-api.wittysea-ba809eb0.mexicocentral.azurecontainerapps.io/v3/api-docs
+- **URL base HTTPS:** `https://taskmanager-api.wittysea-ba809eb0.mexicocentral.azurecontainerapps.io`
+
+> **Aviso de seguridad:** la API está expuesta a Internet y no se ha verificado autenticación/autorización en sus operaciones de escritura. El enlace se ofrece como demostración técnica; no debe tratarse como una API de producción protegida. Las credenciales deben almacenarse como secretos en Container Apps y rotarse de inmediato si se han divulgado.
 
 ## Contenido
 
@@ -45,6 +54,7 @@ API REST desarrollada como **desafío técnico de Java Backend** para administra
 - Pruebas unitarias, pruebas de controlador y prueba de arranque de Spring.
 - Contenedores para API y PostgreSQL, con volumen persistente para la base de datos.
 - Pipeline de Azure DevOps para compilar, probar y publicar imágenes en Azure Container Registry.
+- API ejecutándose en Azure Container Apps (Consumption) con acceso HTTPS público y PostgreSQL Flexible Server mediante red privada.
 
 ## Tecnologías
 
@@ -63,7 +73,7 @@ API REST desarrollada como **desafío técnico de Java Backend** para administra
 | Contenedores | Docker y Docker Compose |
 | Control de versiones | Git / GitHub / Azure Repos |
 | Automatización | Azure Pipelines |
-| Servicios en Azure | Azure Container Registry, PostgreSQL Flexible Server, Azure Container Apps (despliegue en proceso) |
+| Servicios en Azure | Azure Container Registry, PostgreSQL Flexible Server, Azure Container Apps (despliegue verificado) |
 
 ## Arquitectura y decisiones de diseño
 
@@ -210,9 +220,19 @@ La API devuelve una confirmación en texto plano cuando la eliminación es exito
 
 ### Swagger UI
 
+- **Azure (Swagger, acceso público comprobado):** <https://taskmanager-api.wittysea-ba809eb0.mexicocentral.azurecontainerapps.io/swagger-ui/index.html>
+- **Azure (OpenAPI JSON, ruta publicada):** <https://taskmanager-api.wittysea-ba809eb0.mexicocentral.azurecontainerapps.io/v3/api-docs>
 - Ejecutando desde IntelliJ/Gradle en puerto 8080: <http://localhost:8080/swagger-ui/index.html>
 - Ejecutando con Docker Compose en puerto 8081: <http://localhost:8081/swagger-ui/index.html>
 - Especificación OpenAPI desde Docker: <http://localhost:8081/v3/api-docs>
+
+**Ejemplo de consulta pública (solo lectura):**
+
+```bash
+curl -i 'https://taskmanager-api.wittysea-ba809eb0.mexicocentral.azurecontainerapps.io/taskmanagement/allTasks'
+```
+
+**Importante:** el listado responde `404 Not Found` si todavía no existen tareas, por decisión actual del Service. Por eso un `404` con el mensaje `No hay tareas registradas en el sistema.` no implica que el despliegue haya fallado.
 
 ## Requisitos previos
 
@@ -383,7 +403,7 @@ Los reportes locales de JUnit/Gradle se generan dentro de `build/reports/tests/t
 
 ## CI/CD con Azure DevOps
 
-**Azure DevOps:** proyecto privado `TaskManagerAPI`. El pipeline ya ejecutó satisfactoriamente compilación, pruebas, construcción de imagen y publicación en ACR.
+**Azure DevOps:** proyecto `TaskManagerAPI` configurado como **privado** durante el desarrollo. El desafío solicita un proyecto **público**; se debe revisar ese requisito antes de entregar. El pipeline ya ejecutó satisfactoriamente compilación, pruebas, construcción de imagen y publicación en ACR.
 
 Flujo implementado:
 
@@ -399,7 +419,34 @@ Flujo implementado:
 
 **Imagen publicada:** `acrtaskmanagerht2026.azurecr.io/taskmanager-api:<BuildId>`, donde `<BuildId>` es la etiqueta numérica de cada ejecución. La etiqueta `9` se seleccionó durante la configuración inicial de Container Apps.
 
-> **Despliegue continuo:** la publicación al registro está validada, pero la etapa que actualiza automáticamente Azure Container Apps con cada build **todavía debe implementarse y comprobarse**. Construir y subir una imagen no significa desplegarla automáticamente.
+**Despliegue manual verificado:** Container Apps descargó la imagen privada desde ACR mediante la identidad administrada `system-environment` (con permiso de lectura del registro) y aprovisionó satisfactoriamente una revisión saludable.
+
+> **Despliegue continuo (CD):** falta comprobar con un pipeline exitoso la ejecución del paso `az containerapp update --image acrtaskmanagerht2026.azurecr.io/taskmanager-api:$(Build.BuildId)` posterior a `docker push`. No se declara completado hasta que Azure DevOps actualice efectivamente una nueva revisión y esta quede lista.
+
+**Permisos utilizados o previstos:**
+
+- Identidad federada de la conexión de servicio `taskmanagersystem_connection`: rol `Container Registry Repository Writer` sobre el ACR para publicar la imagen.
+- Identidad administrada del entorno Container Apps: rol `Container Registry Repository Reader` sobre el ACR para descargarla.
+- Para CD, la identidad de la conexión de servicio necesitará permiso de actualización sobre `taskmanager-api` (por ejemplo `Container Apps Contributor` limitado a ese recurso). **La asignación y el pipeline CD aún deben validarse.**
+
+**Ejemplo del paso CD a agregar al pipeline de Azure Repos** (después de construir y publicar la imagen; ajustar la indentación a la lista `steps` real):
+
+```yaml
+- task: AzureCLI@2
+  displayName: 'Desplegar TaskManagerAPI en Azure Container Apps'
+  inputs:
+    azureSubscription: 'taskmanagersystem_connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      set -euo pipefail
+      az containerapp update \
+        --resource-group rg-taskmanager-dev \
+        --name taskmanager-api \
+        --image acrtaskmanagerht2026.azurecr.io/taskmanager-api:$(Build.BuildId)
+```
+
+Una ejecución de CD debe además verificar la **nueva revisión lista** y realizar al menos una petición HTTP de comprobación. Un paso que ejecute `az containerapp update` sin verificar el estado de la aplicación no basta por sí solo para afirmar que el despliegue funciona.
 
 ## Infraestructura en Microsoft Azure
 
@@ -414,8 +461,8 @@ Recursos configurados para el entorno de desarrollo:
 | VNet | `vnet-taskmanager` | Creada |
 | Subred PostgreSQL | `snet-postgres`, `10.20.1.0/27` | Delegada |
 | Subred Container Apps | `snet-containerapps`, `10.20.2.0/23` | Delegada |
-| Entorno Container Apps | `env-taskmanager-dev` | Configurado; verificar aprovisionamiento |
-| Container App | `taskmanager-api` | Implementación / arranque pendiente de verificar |
+| Entorno Container Apps | `env-taskmanager-dev` | Desplegado en México Central; perfil Consumption |
+| Container App | `taskmanager-api` | `Succeeded`, revisión `taskmanager-api--ioygsue` saludable; 1 réplica activa |
 
 **Servidor de base de datos:** `pg-taskmanager-ht2026.postgres.database.azure.com`.
 
@@ -437,14 +484,33 @@ DB_PASSWORD                  = referencia al mismo secreto
 
 No se incluye ningún valor real de contraseña.
 
-Cuando Azure Container Apps esté **Healthy / Running** y reciba tráfico correctamente, completar aquí la URL HTTPS pública y su Swagger UI:
+**URLs del despliegue comprobado el 16/10/2026:**
 
 ```text
-URL HTTPS pública: PENDIENTE DE CONFIRMAR
-Swagger público:   PENDIENTE DE CONFIRMAR
+URL HTTPS pública:
+https://taskmanager-api.wittysea-ba809eb0.mexicocentral.azurecontainerapps.io
+
+Swagger UI (acceso desde navegador comprobado):
+https://taskmanager-api.wittysea-ba809eb0.mexicocentral.azurecontainerapps.io/swagger-ui/index.html
+
+OpenAPI JSON:
+https://taskmanager-api.wittysea-ba809eb0.mexicocentral.azurecontainerapps.io/v3/api-docs
 ```
 
-La conectividad de PostgreSQL es privada y su resolución DNS debe funcionar dentro de la VNet. El acceso público corresponde a la API, no a la base de datos.
+**Evidencia de arranque:** Spring Boot 4.1.1 sobre Java 21 inició Tomcat en el puerto 8080. HikariCP estableció la conexión JDBC con `TaskManagerDB` y Flyway aplicó V1, V2 y V3 en `management`, terminando en versión `v3`. La revisión `taskmanager-api--ioygsue` se reportó `Healthy / Provisioned` y recibió el 100 % del tráfico. Swagger UI fue comprobado por navegador; **no se ha reportado todavía una prueba completa de cada operación CRUD contra Azure**.
+
+```mermaid
+flowchart LR
+    Cliente[Cliente HTTPS / Swagger] --> Ingress[Azure Container Apps / Ingress]
+    Ingress --> API[taskmanager-api / Spring Boot 4.1.1]
+    ACR[Azure Container Registry] -. Imagen privada + identidad administrada .-> API
+    API -->|JDBC/TLS en VNet| DB[(PostgreSQL Flexible Server / TaskManagerDB)]
+    Flyway[Flyway V1-V3] -. Migraciones al inicio .-> DB
+    Pipeline[Azure DevOps Pipelines] -->|CI: compilar y publicar| ACR
+    Pipeline -. CD pendiente de validar .-> API
+```
+
+La conectividad de PostgreSQL es privada y su resolución DNS funciona dentro de la VNet. El acceso público corresponde a la API, no a la base de datos.
 
 ## Seguridad y configuración
 
@@ -495,7 +561,7 @@ TaskManagerAPI/
 - Ramas de trabajo utilizadas: `master`, `conf_db`, `jpa_repo`, `service`, `controller`, `tests` (y una rama `main` histórica/remota).
 - El historial contiene commits de implementación CRUD, pruebas y configuración Docker.
 
-> **Importante:** GitHub y Azure Repos son repositorios remotos separados. Importar el proyecto inicialmente **no los sincroniza automáticamente**. Para la entrega, verifica que ambos tengan la versión definitiva y que la rama por defecto muestre el código actualizado.
+> **Importante:** GitHub y Azure Repos son repositorios remotos separados. Importar el proyecto inicialmente **no los sincroniza automáticamente**. Para la entrega, verifica que ambos tengan la versión definitiva y que la rama por defecto muestre el código actualizado. En la consulta al repositorio público GitHub del 16/10/2026, la rama predeterminada `main` solo mostraba un README inicial; el código revisado estaba en `master`. Establece la rama adecuada como predeterminada o integra el contenido antes de compartir el enlace.
 
 ## Consideraciones y pendientes
 
@@ -508,14 +574,17 @@ TaskManagerAPI/
 - [x] Pipeline de integración continua en Azure DevOps.
 - [x] Publicación de imagen Docker en Azure Container Registry.
 - [x] PostgreSQL Flexible Server y `TaskManagerDB` creados en Azure.
-- [ ] Confirmar arranque saludable, Flyway, conectividad y Swagger en Azure Container Apps.
+- [x] Confirmar arranque saludable, Flyway, conectividad y Swagger en Azure Container Apps (16/10/2026).
 - [ ] Agregar al pipeline la actualización automática de Container Apps (CD) y validar el despliegue.
 - [ ] Homologar las rutas del Controller con `/api/tasks` si se requiere cumplir exactamente el enunciado.
 - [ ] Revisar el comportamiento del listado vacío: actualmente responde 404; una alternativa REST convencional es `200 OK` con `[]`.
 - [ ] Implementar o configurar control de acceso antes de exponer públicamente los endpoints de escritura.
-- [ ] Sincronizar el README y el código final entre GitHub y Azure Repos.
-- [ ] Incorporar la URL HTTPS de la API y de Swagger cuando estén verificadas.
+- [ ] Sincronizar el README y el código final entre GitHub y Azure Repos y establecer correctamente la rama principal visible.
+- [ ] Revisar el requisito del enunciado de crear un proyecto público en Azure DevOps (configurado inicialmente como privado).
+- [x] Incorporar la URL HTTPS verificada de la API y de Swagger.
+- [ ] Validar una ejecución real de los cinco endpoints CRUD sobre la instancia Azure.
+- [ ] Verificar que todas las credenciales estén almacenadas como secretos de Container Apps y rotar cualquier credencial comprometida.
 
 ---
 
-**Proyecto:** TaskManagerAPI · **Repositorio:** [GitHub](https://github.com/Humbert09/TaskManagerAPI) · **Documentación interactiva:** Swagger UI al ejecutar la aplicación.
+**Proyecto:** TaskManagerAPI · **Repositorio:** [GitHub](https://github.com/Humbert09/TaskManagerAPI) · **Documentación interactiva:** [Swagger UI en Azure](https://taskmanager-api.wittysea-ba809eb0.mexicocentral.azurecontainerapps.io/swagger-ui/index.html).
