@@ -1,9 +1,46 @@
+
 services:
-  postgres:
-    image: 'postgres:latest'
+
+  # Base de datos PostgreSQL
+  db:
+    image: postgres:18
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      POSTGRES_DB: TaskManagerDB
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - '5432'
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # API Spring Boot
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: taskmanager-api:local
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/TaskManagerDB
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_SCHEMAS: management
+      SPRING_FLYWAY_CREATE_SCHEMAS: "true"
+    ports:
+      - "127.0.0.1:8081:8080"
+
+volumes:
+  postgres_data:

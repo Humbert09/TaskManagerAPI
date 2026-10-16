@@ -1,0 +1,14 @@
+
+.gradle
+build
+out
+.idea
+*.iml
+
+.git
+.gitignore
+
+.env
+.env.*
+
+*.log
