@@ -27,5 +27,5 @@ public interface TaskService {
 
     //Modifica una tarea por su id
     @Transactional
-    Tasks updateTaskById(Integer id, TaskUpdateDTO dto);
+    TaskResponseDTO updateTaskById(Integer id, TaskUpdateDTO dto);
 }

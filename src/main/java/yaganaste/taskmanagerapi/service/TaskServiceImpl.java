@@ -73,22 +73,6 @@ public class TaskServiceImpl  implements TaskService{
                 .toList();
     }
 
-    //Obtiene una tarea a través de su id
-    @Override
-    @Transactional
-    public TaskResponseDTO getTaskById(Integer id) {
-
-        Tasks task = findTaskEntityById(id);
-
-        return new TaskResponseDTO(
-                task.getId(),
-                task.getTitle(),
-                task.getDescription(),
-                task.getStatus(),
-                task.getCreationDate()
-        );
-    }
-
     //Metodo implementado para buscar la tarea como entidad y poder devolverla en un dto
     private Tasks findTaskEntityById(Integer id) {
 
@@ -104,6 +88,22 @@ public class TaskServiceImpl  implements TaskService{
                 ));
     }
 
+
+    //Obtiene una tarea a través de su id
+    @Override
+    @Transactional
+    public TaskResponseDTO getTaskById(Integer id) {
+
+        Tasks task = findTaskEntityById(id);
+
+        return new TaskResponseDTO(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getStatus(),
+                task.getCreationDate()
+        );
+    }
 
     //Borra una tarea a través de su id
     @Transactional
@@ -121,7 +121,11 @@ public class TaskServiceImpl  implements TaskService{
     //Modifica una tarea por su id
     @Transactional
     @Override
-    public Tasks updateTaskById(Integer id, TaskUpdateDTO dto) {
+    public TaskResponseDTO updateTaskById(Integer id, TaskUpdateDTO dto) {
+
+        if (dto == null) {
+            throw new IllegalArgumentException("Los datos de actualización son obligatorios");
+        }
 
         Tasks tmp = findTaskEntityById(id);
 
@@ -133,7 +137,17 @@ public class TaskServiceImpl  implements TaskService{
         if(dto.getStatus() != null){
         tmp.setStatus(dto.getStatus());}
 
-        return taskRepository.save(tmp);
+        taskRepository.save(tmp);
+
+        TaskResponseDTO response = new TaskResponseDTO(
+                tmp.getId(),
+                tmp.getTitle(),
+                tmp.getDescription(),
+                tmp.getStatus(),
+                tmp.getCreationDate()
+        );
+
+        return response;
     }
 
 

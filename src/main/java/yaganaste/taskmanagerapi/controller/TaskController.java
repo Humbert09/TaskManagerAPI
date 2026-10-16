@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import yaganaste.taskmanagerapi.dto.TaskCreateDTO;
 import yaganaste.taskmanagerapi.dto.TaskResponseDTO;
+import yaganaste.taskmanagerapi.dto.TaskUpdateDTO;
 import yaganaste.taskmanagerapi.service.TaskService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -56,4 +57,16 @@ public class TaskController {
 
         return ResponseEntity.ok(response);
     }
+
+
+    @PutMapping("/modifyTask/{id}")
+    public ResponseEntity<TaskResponseDTO> updateTaskById(
+            @PathVariable Integer id,
+            @Valid @RequestBody TaskUpdateDTO dto) {
+
+        TaskResponseDTO response = taskService.updateTaskById(id, dto);
+
+        return ResponseEntity.ok(response);
+    }
+
 }
