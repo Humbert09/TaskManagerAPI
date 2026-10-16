@@ -2,6 +2,7 @@ package yaganaste.taskmanagerapi.service;
 
 import jakarta.transaction.Transactional;
 import yaganaste.taskmanagerapi.dto.TaskCreateDTO;
+import yaganaste.taskmanagerapi.dto.TaskResponseDTO;
 import yaganaste.taskmanagerapi.dto.TaskUpdateDTO;
 import yaganaste.taskmanagerapi.enums.TaskStatus;
 import yaganaste.taskmanagerapi.models.Tasks;
@@ -12,7 +13,7 @@ public interface TaskService {
 
     //Crea una tarea
     @Transactional
-    Tasks createTask(TaskCreateDTO dto);
+    TaskResponseDTO createTask(TaskCreateDTO dto);
 
     //Obtiene todas las tareas
     List<Tasks> getAllTasks();

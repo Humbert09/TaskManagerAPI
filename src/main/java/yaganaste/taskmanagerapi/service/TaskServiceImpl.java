@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import yaganaste.taskmanagerapi.dto.TaskCreateDTO;
+import yaganaste.taskmanagerapi.dto.TaskResponseDTO;
 import yaganaste.taskmanagerapi.dto.TaskUpdateDTO;
 import yaganaste.taskmanagerapi.enums.TaskStatus;
 import yaganaste.taskmanagerapi.models.Tasks;
@@ -24,7 +25,7 @@ public class TaskServiceImpl  implements TaskService{
     //Crea una nueva tarea
     @Override
     @Transactional
-    public Tasks createTask(TaskCreateDTO dto) {
+    public TaskResponseDTO createTask(TaskCreateDTO dto) {
 
         Tasks task = new Tasks();
 
@@ -36,7 +37,17 @@ public class TaskServiceImpl  implements TaskService{
         task.setStatus(TaskStatus.Pending);
         task.setCreationDate(OffsetDateTime.now(ZoneOffset.UTC));
 
-        return taskRepository.save(task);
+        taskRepository.save(task);
+
+        TaskResponseDTO response = new TaskResponseDTO(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getStatus(),
+                task.getCreationDate()
+        );
+
+        return response;
     }
 
     //Obtiene una lista con todos los objetos Tasks de la DB
